@@ -190,7 +190,7 @@ public class MainActivity extends Activity {
                 String name = contentType.substring(idx + 8).trim();
                 int semicolon = name.indexOf(';');
                 if (semicolon >= 0) name = name.substring(0, semicolon).trim();
-                name = name.replace("\\\"", "");
+                name = name.replace("\"", "");
                 try { return Charset.forName(name); } catch (Exception ignored) { }
             }
         }
