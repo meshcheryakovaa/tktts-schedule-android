@@ -2,6 +2,29 @@ plugins {
     id 'com.android.application'
 }
 
+def generatedAssetsDir = layout.buildDirectory.dir("generated/tkttsAssets")
+def indexPartsDir = file("src/main/index_html_b64")
+
+tasks.register("generateScheduleIndex") {
+    inputs.files(fileTree(indexPartsDir) { include "part*.txt" })
+    outputs.file(generatedAssetsDir.map { it.file("index.html") })
+
+    doLast {
+        def parts = fileTree(indexPartsDir) {
+            include "part*.txt"
+        }.files.sort { a, b -> a.name <=> b.name }
+
+        if (parts.isEmpty()) {
+            throw new GradleException("index.html Base64 parts were not found")
+        }
+
+        def base64 = parts.collect { it.getText("UTF-8").trim() }.join("")
+        def outFile = generatedAssetsDir.get().file("index.html").asFile
+        outFile.parentFile.mkdirs()
+        outFile.bytes = base64.decodeBase64()
+    }
+}
+
 android {
     namespace 'ru.tktts.schedule'
     compileSdk 35
@@ -12,6 +35,12 @@ android {
         targetSdk 35
         versionCode 1
         versionName '1.0.0'
+    }
+
+    sourceSets {
+        main {
+            assets.srcDir generatedAssetsDir
+        }
     }
 
     compileOptions {
@@ -25,4 +54,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn tasks.named("generateScheduleIndex")
 }
